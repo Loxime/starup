@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "migrate": "node dist/migrate.js"
+    "migrate": "node dist/migrate.js",
+    "test": "vitest run"
   },
   "dependencies": {
     "@fastify/static": "^10.1.4",
@@ -21,6 +22,7 @@
     "@types/node": "^22.18.6",
     "@types/pg": "^8.15.5",
     "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^5.0.1"
   }
 }
