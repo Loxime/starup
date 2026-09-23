@@ -1,0 +1,15 @@
+{
+  "name": "starup",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w @starup/api",
+    "dev:web": "npm run dev -w @starup/web",
+    "build": "npm run build -w @starup/api && npm run build -w @starup/web",
+    "typecheck": "npm run typecheck -w @starup/api && npm run typecheck -w @starup/web"
+  }
+}

@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: starup-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: starup
+      POSTGRES_USER: starup
+      POSTGRES_PASSWORD: starup
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - starup-postgres-data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U starup -d starup
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  starup-postgres-data:
