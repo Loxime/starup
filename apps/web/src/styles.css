@@ -446,3 +446,9 @@ a {
 .monitor-error span {
   font-size: 13px;
 }
+
+.monitor-last-check {
+  margin-top: 7px;
+  color: #9ca3af;
+  font-size: 13px;
+}

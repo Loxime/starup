@@ -151,9 +151,12 @@ export function App() {
 
   async function loadHistory(
     monitorId: string,
-    selectedRange: Range
+    selectedRange: Range,
+    silent = false
   ) {
-    setLoadingHistory(true);
+    if (!silent) {
+      setLoadingHistory(true);
+    }
 
     try {
       const response = await fetch(
@@ -182,7 +185,9 @@ export function App() {
           : "Impossible de charger l'historique."
       );
     } finally {
-      setLoadingHistory(false);
+      if (!silent) {
+        setLoadingHistory(false);
+      }
     }
   }
 
@@ -213,6 +218,34 @@ export function App() {
     }
 
     void loadHistory(selectedId, range);
+  }, [selectedId, range]);
+
+  useEffect(() => {
+    if (!selectedId) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      void (async () => {
+        try {
+          await loadMonitors(selectedId);
+          await loadHistory(
+            selectedId,
+            range,
+            true
+          );
+        } catch (error) {
+          console.error(
+            "Automatic refresh failed",
+            error
+          );
+        }
+      })();
+    }, 15_000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
   }, [selectedId, range]);
 
   async function handleCreateMonitor(
@@ -272,6 +305,52 @@ export function App() {
       );
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleCheckNow(
+    monitor: Monitor
+  ) {
+    setProcessingId(monitor.id);
+    setPageError(null);
+
+    try {
+      const response = await fetch(
+        `/api/monitors/${monitor.id}/check`,
+        {
+          method: "POST"
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          await readApiError(
+            response,
+            "La vérification a échoué."
+          )
+        );
+      }
+
+      await loadMonitors(monitor.id);
+      await loadHistory(
+        monitor.id,
+        range,
+        true
+      );
+
+      showSuccess(
+        `Monitor "${monitor.name}" vérifié.`
+      );
+    } catch (error) {
+      setPageError(
+        error instanceof Error
+          ? error.message
+          : "La vérification a échoué."
+      );
+
+      await loadMonitors(monitor.id);
+    } finally {
+      setProcessingId(null);
     }
   }
 
@@ -516,9 +595,34 @@ export function App() {
                   >
                     {selectedMonitor.url}
                   </a>
+
+                  <div className="monitor-last-check">
+                    Dernier check :{" "}
+                    {selectedMonitor.lastCheckedAt
+                      ? new Date(
+                          selectedMonitor.lastCheckedAt
+                        ).toLocaleString("fr-FR")
+                      : "jamais"}
+                  </div>
                 </div>
 
                 <div className="monitor-actions">
+                  <button
+                    className="primary-button"
+                    disabled={
+                      processingId === selectedMonitor.id
+                    }
+                    onClick={() =>
+                      void handleCheckNow(
+                        selectedMonitor
+                      )
+                    }
+                  >
+                    {processingId === selectedMonitor.id
+                      ? "Vérification..."
+                      : "Vérifier maintenant"}
+                  </button>
+
                   <button
                     className="secondary-button"
                     disabled={
