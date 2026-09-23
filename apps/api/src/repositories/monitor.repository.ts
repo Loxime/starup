@@ -12,6 +12,9 @@ export interface Monitor {
   jsonPath: string | null;
   intervalSeconds: number;
   enabled: boolean;
+  status: "pending" | "healthy" | "error";
+  lastCheckedAt: Date | null;
+  lastError: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +37,9 @@ type MonitorRow = {
   json_path: string | null;
   interval_seconds: number;
   enabled: boolean;
+  status: "pending" | "healthy" | "error";
+  last_checked_at: Date | null;
+  last_error: string | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -48,6 +54,9 @@ function mapRow(row: MonitorRow): Monitor {
     jsonPath: row.json_path,
     intervalSeconds: row.interval_seconds,
     enabled: row.enabled,
+    status: row.status,
+    lastCheckedAt: row.last_checked_at,
+    lastError: row.last_error,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -198,4 +207,28 @@ export async function updateMonitor(
   return result.rows[0]
     ? mapRow(result.rows[0])
     : null;
+}
+
+
+export async function updateMonitorHealth(
+  id: string,
+  status: "healthy" | "error",
+  error: string | null = null
+): Promise<void> {
+  await db.query(
+    `
+      UPDATE monitors
+      SET
+        status = $2,
+        last_checked_at = NOW(),
+        last_error = $3,
+        updated_at = NOW()
+      WHERE id = $1
+    `,
+    [
+      id,
+      status,
+      error
+    ]
+  );
 }

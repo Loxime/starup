@@ -430,3 +430,19 @@ a {
     flex: 1;
   }
 }
+
+.monitor-error {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  border: 1px solid #7f1d1d;
+  border-radius: 8px;
+  background: #3f1212;
+  color: #fecaca;
+}
+
+.monitor-error span {
+  font-size: 13px;
+}

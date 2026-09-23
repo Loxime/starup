@@ -1,8 +1,12 @@
 import type { FastifyBaseLogger } from "fastify";
+
 import { db } from "../db.js";
 import {
   createMeasurement
 } from "../repositories/measurement.repository.js";
+import {
+  updateMonitorHealth
+} from "../repositories/monitor.repository.js";
 import type {
   Monitor,
   MonitorSourceType
@@ -20,6 +24,9 @@ type MonitorRow = {
   json_path: string | null;
   interval_seconds: number;
   enabled: boolean;
+  status: "pending" | "healthy" | "error";
+  last_checked_at: Date | null;
+  last_error: string | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -44,6 +51,9 @@ function mapRow(row: MonitorRow): Monitor {
     jsonPath: row.json_path,
     intervalSeconds: row.interval_seconds,
     enabled: row.enabled,
+    status: row.status,
+    lastCheckedAt: row.last_checked_at,
+    lastError: row.last_error,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -94,6 +104,12 @@ async function runMonitor(
       value
     );
 
+    await updateMonitorHealth(
+      monitor.id,
+      "healthy",
+      null
+    );
+
     logger.info(
       {
         monitorId: monitor.id,
@@ -102,10 +118,31 @@ async function runMonitor(
       "Monitor measurement stored"
     );
   } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unknown collection error";
+
+    try {
+      await updateMonitorHealth(
+        monitor.id,
+        "error",
+        message
+      );
+    } catch (healthError) {
+      logger.error(
+        {
+          monitorId: monitor.id,
+          error: healthError
+        },
+        "Failed to persist monitor health"
+      );
+    }
+
     logger.error(
       {
         monitorId: monitor.id,
-        error
+        error: message
       },
       "Monitor check failed"
     );
@@ -132,7 +169,9 @@ async function tick(
     }
   } catch (error) {
     logger.error(
-      { error },
+      {
+        error
+      },
       "Scheduler tick failed"
     );
   } finally {

@@ -24,6 +24,9 @@ type Monitor = {
   jsonPath: string | null;
   intervalSeconds: number;
   enabled: boolean;
+  status: "pending" | "healthy" | "error";
+  lastCheckedAt: string | null;
+  lastError: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -468,9 +471,13 @@ export function App() {
                     : "monitor-meta disabled"
                 }
               >
-                {monitor.enabled
-                  ? "● actif"
-                  : "○ en pause"}
+                {!monitor.enabled
+                  ? "○ en pause"
+                  : monitor.status === "error"
+                    ? "● erreur"
+                    : monitor.status === "healthy"
+                      ? "● healthy"
+                      : "● en attente"}
               </span>
             </button>
           ))}
@@ -543,6 +550,13 @@ export function App() {
                   </button>
                 </div>
               </div>
+
+              {selectedMonitor.lastError && (
+                <div className="monitor-error">
+                  <strong>Dernière erreur</strong>
+                  <span>{selectedMonitor.lastError}</span>
+                </div>
+              )}
 
               <div className="range-selector">
                 {(["24h", "7d", "30d"] as Range[]).map(

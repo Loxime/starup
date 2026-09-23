@@ -5,7 +5,8 @@ import {
   listMeasurementsByMonitor
 } from "../repositories/measurement.repository.js";
 import {
-  getMonitorById
+  getMonitorById,
+  updateMonitorHealth
 } from "../repositories/monitor.repository.js";
 import {
   collectMonitorValue
@@ -100,6 +101,11 @@ export async function measurementRoutes(
         value
       );
 
+      await updateMonitorHealth(
+        monitor.id,
+        "healthy"
+      );
+
       return reply.status(201).send({
         monitor: {
           id: monitor.id,
@@ -110,10 +116,19 @@ export async function measurementRoutes(
     } catch (error) {
       app.log.error(error);
 
-      return reply.status(502).send({
-        error: error instanceof Error
+      const message =
+        error instanceof Error
           ? error.message
-          : "Collection failed"
+          : "Collection failed";
+
+      await updateMonitorHealth(
+        monitor.id,
+        "error",
+        message
+      );
+
+      return reply.status(502).send({
+        error: message
       });
     }
   });
