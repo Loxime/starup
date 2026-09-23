@@ -51,16 +51,20 @@ export async function measurementRoutes(
 
     const range = request.query.range ?? "24h";
 
-    const now = Date.now();
-
     const ranges = {
       "24h": 24 * 60 * 60 * 1000,
       "7d": 7 * 24 * 60 * 60 * 1000,
       "30d": 30 * 24 * 60 * 60 * 1000
-    };
+    } as const;
+
+    if (!(range in ranges)) {
+      return reply.status(400).send({
+        error: "Invalid range. Expected 24h, 7d or 30d."
+      });
+    }
 
     const since = new Date(
-      now - ranges[range]
+      Date.now() - ranges[range]
     );
 
     const summary = await getMeasurementSummary(
