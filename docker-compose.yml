@@ -3,25 +3,37 @@ services:
     image: postgres:17-alpine
     container_name: starup-postgres
     restart: unless-stopped
-
     environment:
       POSTGRES_DB: starup
       POSTGRES_USER: starup
       POSTGRES_PASSWORD: starup
-
     ports:
-      - "5432:5432"
-
+      - "5433:5432"
     volumes:
       - starup-postgres-data:/var/lib/postgresql/data
-
     healthcheck:
       test:
         - CMD-SHELL
         - pg_isready -U starup -d starup
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+
+  starup:
+    build:
+      context: .
+    container_name: starup
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: postgresql://starup:starup@postgres:5432/starup
+    ports:
+      - "3000:3000"
 
 volumes:
   starup-postgres-data:
