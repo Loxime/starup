@@ -117,3 +117,94 @@ export async function getMeasurementSummary(
     measurements
   };
 }
+
+export interface DailyGrowthPoint {
+  date: string;
+  value: number;
+  change: number | null;
+}
+
+type DailyGrowthRow = {
+  date: string;
+  value: number;
+  change: number | null;
+};
+
+export async function getDailyGrowth(
+  monitorId: string,
+  days: number
+): Promise<DailyGrowthPoint[]> {
+  const result = await db.query<DailyGrowthRow>(
+    `
+      WITH daily_close AS (
+        SELECT DISTINCT ON (day)
+          day,
+          value
+        FROM (
+          SELECT
+            (measured_at AT TIME ZONE 'UTC')::date AS day,
+            value,
+            measured_at
+          FROM measurements
+          WHERE monitor_id = $1
+            AND measured_at >= (
+              (
+                date_trunc(
+                  'day',
+                  NOW() AT TIME ZONE 'UTC'
+                )
+                - ($2::int * INTERVAL '1 day')
+              )
+              AT TIME ZONE 'UTC'
+            )
+        ) AS measurements_by_day
+        ORDER BY
+          day ASC,
+          measured_at DESC
+      ),
+      daily_with_previous AS (
+        SELECT
+          day,
+          value,
+          LAG(day) OVER (
+            ORDER BY day
+          ) AS previous_day,
+          LAG(value) OVER (
+            ORDER BY day
+          ) AS previous_value
+        FROM daily_close
+      )
+      SELECT
+        day::text AS date,
+        value,
+        CASE
+          WHEN previous_day IS NOT NULL
+            AND day - previous_day = 1
+          THEN value - previous_value
+          ELSE NULL
+        END AS change
+      FROM daily_with_previous
+      WHERE day >= (
+        date_trunc(
+          'day',
+          NOW() AT TIME ZONE 'UTC'
+        )
+        - (($2::int - 1) * INTERVAL '1 day')
+      )::date
+      ORDER BY day ASC
+    `,
+    [
+      monitorId,
+      days
+    ]
+  );
+
+  return result.rows.map((row) => ({
+    date: row.date,
+    value: Number(row.value),
+    change:
+      row.change === null
+        ? null
+        : Number(row.change)
+  }));
+}
