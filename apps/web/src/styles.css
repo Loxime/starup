@@ -19,9 +19,15 @@
   --border-soft: #1c2632;
   --text: #e7edf5;
   --muted: #8896a7;
-  --green: #7ee787;
-  --green-dark: #1f6f3d;
-  --green-soft: rgba(126, 231, 135, 0.12);
+  --accent: #ff8a1f;
+  --accent-strong: #f97316;
+  --accent-hover: #fb923c;
+  --accent-soft: rgba(255, 138, 31, 0.13);
+  --accent-border: rgba(255, 138, 31, 0.28);
+
+  --healthy: #7ee787;
+  --healthy-soft: rgba(126, 231, 135, 0.12);
+
   --red: #ff7b72;
   --yellow: #e3b341;
 }
@@ -53,7 +59,7 @@ button:disabled {
 }
 
 a {
-  color: #79c0ff;
+  color: #ffad66;
 }
 
 .page {
@@ -85,10 +91,9 @@ a {
 }
 
 .brand-logo {
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  object-fit: cover;
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
 }
 
 .header h1 {
@@ -113,10 +118,10 @@ a {
 
 .status {
   padding: 7px 11px;
-  border: 1px solid rgba(126, 231, 135, 0.18);
+  border: 1px solid var(--accent-border);
   border-radius: 999px;
-  background: var(--green-soft);
-  color: var(--green);
+  background: var(--accent-soft);
+  color: var(--accent);
   font-size: 13px;
   font-weight: 700;
 }
@@ -143,12 +148,12 @@ a {
 }
 
 .primary-button {
-  background: #2ea043;
-  color: white;
+  background: var(--accent-strong);
+  color: #ffffff;
 }
 
 .primary-button:hover {
-  background: #3fb950;
+  background: var(--accent-hover);
 }
 
 .secondary-button {
@@ -189,8 +194,8 @@ a {
 
 .notification.success {
   border-color: rgba(126, 231, 135, 0.2);
-  background: var(--green-soft);
-  color: var(--green);
+  background: var(--healthy-soft);
+  color: var(--healthy);
 }
 
 .notification button {
@@ -274,8 +279,13 @@ a {
 }
 
 .monitor.active {
-  border-color: #314154;
-  background: #18212b;
+  border-color: var(--accent-border);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 138, 31, 0.10),
+      #18212b 70%
+    );
 }
 
 .monitor-topline {
@@ -293,7 +303,7 @@ a {
 }
 
 .status-dot.healthy {
-  background: var(--green);
+  background: var(--healthy);
   box-shadow: 0 0 10px rgba(126, 231, 135, 0.45);
 }
 
@@ -372,7 +382,7 @@ a {
 }
 
 .monitor-toolbar a:hover {
-  color: #79c0ff;
+  color: #ffbd80;
 }
 
 .status-badge {
@@ -387,8 +397,8 @@ a {
 
 .status-badge.healthy {
   border-color: rgba(126, 231, 135, 0.2);
-  background: var(--green-soft);
-  color: var(--green);
+  background: var(--healthy-soft);
+  color: var(--healthy);
 }
 
 .status-badge.error {
@@ -470,13 +480,13 @@ a {
 }
 
 .range-button.active {
-  background: #253142;
-  color: #f8fafc;
+  background: var(--accent-soft);
+  color: #ffd8b0;
 }
 
 .chart-shapes .range-button.active {
-  background: #1f6f3d;
-  color: #d7ffdc;
+  background: var(--accent-strong);
+  color: #ffffff;
 }
 
 .cards {
@@ -517,17 +527,17 @@ a {
 }
 
 .primary-metric-card {
-  border-color: rgba(126, 231, 135, 0.24);
+  border-color: var(--accent-border);
   background:
     linear-gradient(
       135deg,
-      rgba(126, 231, 135, 0.11),
+      rgba(255, 138, 31, 0.14),
       rgba(17, 24, 32, 0.95) 65%
     );
 }
 
 .primary-metric-card strong {
-  color: var(--green);
+  color: var(--accent);
 }
 
 .panel {
@@ -557,7 +567,7 @@ a {
 
 .chart {
   margin-top: 20px;
-  color: var(--green);
+  color: var(--accent);
 }
 
 .loading-panel,
@@ -668,7 +678,7 @@ a {
 
 .monitor-form input:focus,
 .monitor-form select:focus {
-  border-color: #3fb950;
+  border-color: var(--accent);
 }
 
 .form-error {
