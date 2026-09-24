@@ -1,4 +1,6 @@
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
   Line,
   LineChart,
@@ -14,6 +16,7 @@ import {
 } from "react";
 
 type Range = "24h" | "7d" | "30d";
+type ChartMode = "value" | "growth";
 
 type Monitor = {
   id: string;
@@ -38,6 +41,12 @@ type Measurement = {
   measuredAt: string;
 };
 
+type DailyGrowthPoint = {
+  date: string;
+  value: number;
+  change: number | null;
+};
+
 type HistoryResponse = {
   monitor: {
     id: string;
@@ -48,6 +57,7 @@ type HistoryResponse = {
   previousValue: number | null;
   delta: number | null;
   measurements: Measurement[];
+  dailyGrowth: DailyGrowthPoint[];
 };
 
 type CreateMonitorForm = {
@@ -73,6 +83,7 @@ export function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryResponse | null>(null);
   const [range, setRange] = useState<Range>("24h");
+  const [chartMode, setChartMode] = useState<ChartMode>("value");
 
   const [loadingMonitors, setLoadingMonitors] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -662,22 +673,52 @@ export function App() {
                 </div>
               )}
 
-              <div className="range-selector">
-                {(["24h", "7d", "30d"] as Range[]).map(
-                  (item) => (
-                    <button
-                      key={item}
-                      className={
-                        range === item
-                          ? "range-button active"
-                          : "range-button"
-                      }
-                      onClick={() => setRange(item)}
-                    >
-                      {item}
-                    </button>
-                  )
-                )}
+              <div className="chart-controls">
+                <div className="range-selector">
+                  {(["24h", "7d", "30d"] as Range[]).map(
+                    (item) => (
+                      <button
+                        key={item}
+                        className={
+                          range === item
+                            ? "range-button active"
+                            : "range-button"
+                        }
+                        onClick={() => setRange(item)}
+                      >
+                        {item}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                <div className="range-selector">
+                  <button
+                    className={
+                      chartMode === "value"
+                        ? "range-button active"
+                        : "range-button"
+                    }
+                    onClick={() =>
+                      setChartMode("value")
+                    }
+                  >
+                    Valeur
+                  </button>
+
+                  <button
+                    className={
+                      chartMode === "growth"
+                        ? "range-button active"
+                        : "range-button"
+                    }
+                    onClick={() =>
+                      setChartMode("growth")
+                    }
+                  >
+                    Croissance / jour
+                  </button>
+                </div>
               </div>
 
               {loadingHistory && (
@@ -709,6 +750,29 @@ export function App() {
                     </div>
 
                     <div className="card">
+                      <span>Croissance aujourd'hui</span>
+
+                      <strong>
+                        {history.dailyGrowth.length === 0 ||
+                        history.dailyGrowth[
+                          history.dailyGrowth.length - 1
+                        ].change === null
+                          ? "—"
+                          : history.dailyGrowth[
+                              history.dailyGrowth.length - 1
+                            ].change! >= 0
+                            ? `+${
+                                history.dailyGrowth[
+                                  history.dailyGrowth.length - 1
+                                ].change
+                              }`
+                            : history.dailyGrowth[
+                                history.dailyGrowth.length - 1
+                              ].change}
+                      </strong>
+                    </div>
+
+                    <div className="card">
                       <span>Mesures {range}</span>
 
                       <strong>
@@ -720,17 +784,89 @@ export function App() {
                   <div className="panel">
                     <div className="panel-header">
                       <div>
-                        <h2>Évolution</h2>
+                        <h2>
+                          {chartMode === "value"
+                            ? "Évolution"
+                            : "Croissance quotidienne"}
+                        </h2>
 
                         <p>
-                          Historique des valeurs sur {range}.
+                          {chartMode === "value"
+                            ? `Historique des valeurs sur ${range}.`
+                            : `Variation quotidienne de la métrique sur ${range}.`}
                         </p>
                       </div>
                     </div>
 
-                    {history.measurements.length === 0 ? (
+                    {chartMode === "value" ? (
+                      history.measurements.length === 0 ? (
+                        <div className="no-data">
+                          Aucune mesure disponible sur cette période.
+                        </div>
+                      ) : (
+                        <div className="chart">
+                          <ResponsiveContainer
+                            width="100%"
+                            height={360}
+                          >
+                            <LineChart
+                              data={history.measurements}
+                            >
+                              <CartesianGrid
+                                strokeDasharray="3 3"
+                              />
+
+                              <XAxis
+                                dataKey="measuredAt"
+                                tickFormatter={(
+                                  value: string
+                                ) =>
+                                  new Date(
+                                    value
+                                  ).toLocaleString(
+                                    "fr-FR",
+                                    {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      hour: "2-digit",
+                                      minute: "2-digit"
+                                    }
+                                  )
+                                }
+                              />
+
+                              <YAxis
+                                domain={[
+                                  "dataMin - 1",
+                                  "dataMax + 1"
+                                ]}
+                              />
+
+                              <Tooltip
+                                labelFormatter={(value) =>
+                                  new Date(
+                                    String(value)
+                                  ).toLocaleString(
+                                    "fr-FR"
+                                  )
+                                }
+                              />
+
+                              <Line
+                                type="monotone"
+                                dataKey="value"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                dot
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )
+                    ) : history.dailyGrowth.length === 0 ? (
                       <div className="no-data">
-                        Aucune mesure disponible sur cette période.
+                        Pas encore assez de données pour calculer
+                        une croissance quotidienne.
                       </div>
                     ) : (
                       <div className="chart">
@@ -738,55 +874,51 @@ export function App() {
                           width="100%"
                           height={360}
                         >
-                          <LineChart
-                            data={history.measurements}
+                          <BarChart
+                            data={history.dailyGrowth}
                           >
                             <CartesianGrid
                               strokeDasharray="3 3"
                             />
 
                             <XAxis
-                              dataKey="measuredAt"
+                              dataKey="date"
                               tickFormatter={(
                                 value: string
                               ) =>
                                 new Date(
-                                  value
-                                ).toLocaleString(
+                                  `${value}T00:00:00Z`
+                                ).toLocaleDateString(
                                   "fr-FR",
                                   {
                                     day: "2-digit",
-                                    month: "2-digit",
-                                    hour: "2-digit",
-                                    minute: "2-digit"
+                                    month: "2-digit"
                                   }
                                 )
                               }
                             />
 
-                            <YAxis
-                              domain={[
-                                "dataMin - 1",
-                                "dataMax + 1"
-                              ]}
-                            />
+                            <YAxis />
 
                             <Tooltip
                               labelFormatter={(value) =>
                                 new Date(
-                                  String(value)
-                                ).toLocaleString("fr-FR")
+                                  `${String(value)}T00:00:00Z`
+                                ).toLocaleDateString(
+                                  "fr-FR"
+                                )
                               }
+                              formatter={(value) => [
+                                value,
+                                "Croissance"
+                              ]}
                             />
 
-                            <Line
-                              type="monotone"
-                              dataKey="value"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                              dot
+                            <Bar
+                              dataKey="change"
+                              fill="currentColor"
                             />
-                          </LineChart>
+                          </BarChart>
                         </ResponsiveContainer>
                       </div>
                     )}
