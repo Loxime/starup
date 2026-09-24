@@ -34,6 +34,8 @@ Le suivi commence lors de la création du monitor. StarUp ne reconstruit pas d'h
 - collecte périodique
 - historique 24h / 7j / 30j
 - dashboard graphique
+- croissance quotidienne des métriques
+- bascule valeur absolue / croissance par jour
 - check manuel
 - pause et reprise des monitors
 - suivi du dernier état healthy/error
@@ -181,4 +183,4 @@ DOCKERHUB_USERNAME/starup
 
 ## Statut
 
-MVP.
+Version actuelle : **v0.2.0**.
