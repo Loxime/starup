@@ -1,14 +1,7 @@
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis
-} from "recharts";
+  MetricChart,
+  type ChartShape
+} from "./components/MetricChart";
 import {
   FormEvent,
   useEffect,
@@ -84,6 +77,8 @@ export function App() {
   const [history, setHistory] = useState<HistoryResponse | null>(null);
   const [range, setRange] = useState<Range>("24h");
   const [chartMode, setChartMode] = useState<ChartMode>("value");
+  const [chartShape, setChartShape] =
+    useState<ChartShape>("smooth");
 
   const [loadingMonitors, setLoadingMonitors] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -469,9 +464,17 @@ export function App() {
   return (
     <div className="page">
       <header className="header">
-        <div>
-          <h1>StarUp</h1>
-          <p>HTTP metric monitor</p>
+        <div className="brand">
+          <img
+            src="/starup-icon.png"
+            alt="StarUp"
+            className="brand-logo"
+          />
+
+          <div>
+            <h1>StarUp</h1>
+            <p>Monitoring de métriques</p>
+          </div>
         </div>
 
         <div className="header-actions">
@@ -550,24 +553,28 @@ export function App() {
               }
               onClick={() => setSelectedId(monitor.id)}
             >
-              <span className="monitor-name">
-                {monitor.name}
+              <span className="monitor-topline">
+                <span
+                  className={
+                    !monitor.enabled
+                      ? "status-dot paused"
+                      : monitor.status === "error"
+                        ? "status-dot error"
+                        : monitor.status === "healthy"
+                          ? "status-dot healthy"
+                          : "status-dot pending"
+                  }
+                />
+
+                <span className="monitor-name">
+                  {monitor.name}
+                </span>
               </span>
 
-              <span
-                className={
-                  monitor.enabled
-                    ? "monitor-meta enabled"
-                    : "monitor-meta disabled"
-                }
-              >
-                {!monitor.enabled
-                  ? "○ en pause"
-                  : monitor.status === "error"
-                    ? "● erreur"
-                    : monitor.status === "healthy"
-                      ? "● healthy"
-                      : "● en attente"}
+              <span className="monitor-target">
+                {monitor.sourceType.toUpperCase()}
+                {" · "}
+                toutes les {monitor.intervalSeconds}s
               </span>
             </button>
           ))}
@@ -597,7 +604,29 @@ export function App() {
             <>
               <div className="monitor-toolbar">
                 <div>
-                  <h2>{selectedMonitor.name}</h2>
+                  <div className="monitor-title-row">
+                    <h2>{selectedMonitor.name}</h2>
+
+                    <span
+                      className={
+                        !selectedMonitor.enabled
+                          ? "status-badge paused"
+                          : selectedMonitor.status === "error"
+                            ? "status-badge error"
+                            : selectedMonitor.status === "healthy"
+                              ? "status-badge healthy"
+                              : "status-badge pending"
+                      }
+                    >
+                      {!selectedMonitor.enabled
+                        ? "En pause"
+                        : selectedMonitor.status === "error"
+                          ? "Erreur"
+                          : selectedMonitor.status === "healthy"
+                            ? "Opérationnel"
+                            : "En attente"}
+                    </span>
+                  </div>
 
                   <a
                     href={selectedMonitor.url}
@@ -719,6 +748,32 @@ export function App() {
                     Croissance / jour
                   </button>
                 </div>
+
+                <div className="range-selector chart-shapes">
+                  {([
+                    ["smooth", "Lisse"],
+                    ["straight", "Droite"],
+                    ["step", "Escalier"],
+                    ["area", "Aire"],
+                    ["bar", "Barres"]
+                  ] as const).map(
+                    ([shape, label]) => (
+                      <button
+                        key={shape}
+                        className={
+                          chartShape === shape
+                            ? "range-button active"
+                            : "range-button"
+                        }
+                        onClick={() =>
+                          setChartShape(shape)
+                        }
+                      >
+                        {label}
+                      </button>
+                    )
+                  )}
+                </div>
               </div>
 
               {loadingHistory && (
@@ -730,7 +785,7 @@ export function App() {
               {!loadingHistory && history && (
                 <>
                   <div className="cards">
-                    <div className="card">
+                    <div className="card primary-metric-card">
                       <span>Valeur actuelle</span>
                       <strong>
                         {history.currentValue ?? "—"}
@@ -798,129 +853,24 @@ export function App() {
                       </div>
                     </div>
 
-                    {chartMode === "value" ? (
-                      history.measurements.length === 0 ? (
-                        <div className="no-data">
-                          Aucune mesure disponible sur cette période.
-                        </div>
-                      ) : (
-                        <div className="chart">
-                          <ResponsiveContainer
-                            width="100%"
-                            height={360}
-                          >
-                            <LineChart
-                              data={history.measurements}
-                            >
-                              <CartesianGrid
-                                strokeDasharray="3 3"
-                              />
-
-                              <XAxis
-                                dataKey="measuredAt"
-                                tickFormatter={(
-                                  value: string
-                                ) =>
-                                  new Date(
-                                    value
-                                  ).toLocaleString(
-                                    "fr-FR",
-                                    {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      hour: "2-digit",
-                                      minute: "2-digit"
-                                    }
-                                  )
-                                }
-                              />
-
-                              <YAxis
-                                domain={[
-                                  "dataMin - 1",
-                                  "dataMax + 1"
-                                ]}
-                              />
-
-                              <Tooltip
-                                labelFormatter={(value) =>
-                                  new Date(
-                                    String(value)
-                                  ).toLocaleString(
-                                    "fr-FR"
-                                  )
-                                }
-                              />
-
-                              <Line
-                                type="monotone"
-                                dataKey="value"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                                dot
-                              />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      )
-                    ) : history.dailyGrowth.length === 0 ? (
+                    {chartMode === "value" &&
+                    history.measurements.length === 0 ? (
+                      <div className="no-data">
+                        Aucune mesure disponible sur cette période.
+                      </div>
+                    ) : chartMode === "growth" &&
+                      history.dailyGrowth.length === 0 ? (
                       <div className="no-data">
                         Pas encore assez de données pour calculer
                         une croissance quotidienne.
                       </div>
                     ) : (
-                      <div className="chart">
-                        <ResponsiveContainer
-                          width="100%"
-                          height={360}
-                        >
-                          <BarChart
-                            data={history.dailyGrowth}
-                          >
-                            <CartesianGrid
-                              strokeDasharray="3 3"
-                            />
-
-                            <XAxis
-                              dataKey="date"
-                              tickFormatter={(
-                                value: string
-                              ) =>
-                                new Date(
-                                  `${value}T00:00:00Z`
-                                ).toLocaleDateString(
-                                  "fr-FR",
-                                  {
-                                    day: "2-digit",
-                                    month: "2-digit"
-                                  }
-                                )
-                              }
-                            />
-
-                            <YAxis />
-
-                            <Tooltip
-                              labelFormatter={(value) =>
-                                new Date(
-                                  `${String(value)}T00:00:00Z`
-                                ).toLocaleDateString(
-                                  "fr-FR"
-                                )
-                              }
-                              formatter={(value) => [
-                                value,
-                                "Croissance"
-                              ]}
-                            />
-
-                            <Bar
-                              dataKey="change"
-                              fill="currentColor"
-                            />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
+                      <MetricChart
+                        mode={chartMode}
+                        shape={chartShape}
+                        measurements={history.measurements}
+                        dailyGrowth={history.dailyGrowth}
+                      />
                     )}
                   </div>
                 </>
